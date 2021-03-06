@@ -1,8 +1,5 @@
 /* Standard headers */
-#include <iostream> // std::cerr
-#include <iomanip> // std::quoted
-#include <memory> // std::make_unique
-#include <thread> // std::thread
+#include <iostream> // std::clog
 
 /* Boost */
 #include <boost/asio/io_context.hpp> // boost::asio::io_context
