@@ -3,5 +3,10 @@ libs=$(addprefix -l,pthread)
 optimOpts=-O3
 dbgOpts=-ggdb3
 
-prog: main.cpp Client.cpp
+all: client dbgClient
+
+client: main.cpp
+	$(compiler) -o $@ $^ $(libs) $(optimOpts)
+
+dbgClient: main.cpp
 	$(compiler) -o $@ $^ $(libs) $(optimOpts) $(dbgOpts)
