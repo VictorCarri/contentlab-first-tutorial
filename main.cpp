@@ -37,7 +37,11 @@ int main()
     #endif
 
     boost::asio::ip::tcp::socket sock(ioc); // THe socket over which we communicate with the server
+    #ifdef DEBUG
     auto connectedEndpoint = boost::asio::connect(sock, resolveRes); // Connect to an endpoint
+    #else
+    boost::asio::connect(sock, resolveRes); // Connect to an endpoint
+    #endif
 
     #ifdef DEBUG
     /* Print endpoint details to prove that it connected to one */
@@ -56,11 +60,13 @@ int main()
     std::time_t now = std::time(NULL); // Get the current time
     std::tm* localTime = std::localtime(&now); // Convert it to calendar time
     char timeStr[DATE_SIZE]; // Time string
-    std::size_t bytesWritten = std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
 
     #ifdef DEBUG
+    std::size_t bytesWritten = std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
     std::cout << "Date: " << timeStr << std::endl
     << "Date size: " << bytesWritten << std::endl;
+    #else
+    std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
     #endif
 
     req.addHeader("Date", timeStr);
