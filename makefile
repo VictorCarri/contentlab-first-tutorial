@@ -1,12 +1,16 @@
 compiler=g++-10
 libs=$(addprefix -l,pthread)
 optimOpts=-O3
-dbgOpts=-ggdb3
+dbgOpts=-ggdb3 -DDEBUG
+files=$(addsuffix .cpp,main Request)
 
 all: client dbgClient
 
-client: main.cpp
+client: $(files)
 	$(compiler) -o $@ $^ $(libs) $(optimOpts)
 
-dbgClient: main.cpp
+dbgClient: $(files)
 	$(compiler) -o $@ $^ $(libs) $(optimOpts) $(dbgOpts)
+
+clean:
+	rm -f client dbgClient

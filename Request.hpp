@@ -15,6 +15,11 @@ class Request
 {
 	public:
 		/**
+		* @desc Constructor. Initializes const fields.
+		**/
+		Request();
+
+		/**
 		* @desc Adds a new header to the request.
 		* @param name The header's name.
 		* @param val The header's value.
