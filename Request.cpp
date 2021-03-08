@@ -24,7 +24,7 @@ Request::Request() : crlf {'\r', '\n'}, // Initialize the line-ender buffer
 **/
 void Request::addHeader(std::string name, std::string val)
 {
-    headers.emplace_front(name, val); // Construct a new pair in-place at the start of the list
+    headers.emplace_back(name, val); // Construct a new pair in-place at the start of the list
 }
 
 /**

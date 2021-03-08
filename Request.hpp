@@ -3,7 +3,6 @@
 
 /* Standard C++ */
 #include <ostream> // std::ostream
-#include <forward_list> // std::forward_list
 #include <utility> // std::pair
 #include <string> // std::string
 #include <vector> // std::vector
@@ -33,7 +32,7 @@ class Request
         std::vector<boost::asio::const_buffer> toBuffers();
 
     private:
-        std::forward_list<std::pair<std::string, std::string>> headers; // A list of the requests' headers
+        std::vector<std::pair<std::string, std::string>> headers; // A list of the requests' headers
         const std::array<char, 2> crlf; // Holds the CRLF sequence
         const std::array<char, 2> nameValSep; // Contains the sequence ": "
         std::vector<boost::asio::const_buffer> bufs; // Holds the request's buffers so that they won't be deleted before the request ends

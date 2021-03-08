@@ -1,5 +1,6 @@
 /* C++ versions of C headers */
 #include <cstddef> // std::size_t
+#include <ctime> // std::time_t, std::time, std::tm, strftime
 
 /* Standard C++ headers */
 #include <iostream> // std::clog, std::endl
@@ -11,6 +12,9 @@
 
 /* Our headers */
 #include "Request.hpp" // Represents a request
+
+/* Defines */
+#define DATE_SIZE 128 // Max date size length
 
 int main()
 {
@@ -49,6 +53,17 @@ int main()
     req.addHeader("Accept", "application/json"); // Request a JSON response from the API
     req.addHeader("Accept-Charset", "utf-8"); // Most common charset on the Internet
     req.addHeader("Content-Length", "0"); // No body
+    std::time_t now = std::time(NULL); // Get the current time
+    std::tm* localTime = std::localtime(&now); // Convert it to calendar time
+    char timeStr[DATE_SIZE]; // Time string
+    std::size_t bytesWritten = std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
+
+    #ifdef DEBUG
+    std::cout << "Date: " << timeStr << std::endl
+    << "Date size: " << bytesWritten << std::endl;
+    #endif
+
+    req.addHeader("Date", timeStr);
     req.addHeader("Host", "cat-fact.herokuapp.com"); // Mandatory header
     req.addHeader("User-Agent", "Cat Fact Client/1.0"); // For fun
     std::vector<boost::asio::const_buffer> reqBufs = req.toBuffers(); // Convert the request to buffers
@@ -71,6 +86,12 @@ int main()
         std::clog << std::endl; // End the line
         ++bufNo;
     }
+    #endif
+
+    boost::asio::write(sock, reqBufs); // Send our request to the server
+
+    #ifdef DEBUG
+    std::clog << "Sent request to the server!" << std::endl;
     #endif
 
     return 0;
