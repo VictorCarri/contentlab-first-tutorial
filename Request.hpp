@@ -27,11 +27,6 @@ class Request
         void addHeader(std::string name, std::string val);
 
         /**
-        * @desc Clears all of the request's headers.
-        **/
-        void clearHeaders();
-
-        /**
         * @desc Converts the Request object to a vector of buffers that can be sent over the network.
         * @return A vector of buffers that can be passed to Boost.Asio's write function.
         **/

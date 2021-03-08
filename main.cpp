@@ -46,6 +46,11 @@ int main()
 
     /* Create a Request and convert it to buffers, then send it */
     Request req; // Just default-construct it for now
+    req.addHeader("Accept", "application/json"); // Request a JSON response from the API
+    req.addHeader("Accept-Charset", "utf-8"); // Most common charset on the Internet
+    req.addHeader("Content-Length", "0"); // No body
+    req.addHeader("Host", "cat-fact.herokuapp.com"); // Mandatory header
+    req.addHeader("User-Agent", "Cat Fact Client/1.0"); // For fun
     std::vector<boost::asio::const_buffer> reqBufs = req.toBuffers(); // Convert the request to buffers
 
     #ifdef DEBUG
