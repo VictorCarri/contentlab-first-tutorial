@@ -100,5 +100,9 @@ int main()
     std::clog << "Sent request to the server!" << std::endl;
     #endif
 
+    /* Read the response */
+    
+    std::size_t bytesRead = boost::asio::read_until(sock, );
+
     return 0;
 }
