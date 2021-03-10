@@ -8,7 +8,7 @@
 #include <vector> // std::vector
 
 /* Boost */
-#include <boost/asio.hpp> // boost::asio::const_buffer
+#include <boost/asio.hpp> // boost::asio::streambuf
 
 class Request
 {
@@ -25,18 +25,21 @@ class Request
         **/
         void addHeader(std::string name, std::string val);
 
-        /**
-        * @desc Converts the Request object to a vector of buffers that can be sent over the network.
-        * @return A vector of buffers that can be passed to Boost.Asio's write function.
-        **/
-        std::vector<boost::asio::const_buffer> toBuffers();
+	/**
+	* @desc Returns the request's internal buffer for Boost.Asio's write() function.
+	**/
+	boost::asio::streambuf& getBuf();
+
+	/**
+	* @desc Tells the Request object to convert itself to a streambuf for writing.
+	**/
+	void createBuf();
 
     private:
         std::vector<std::pair<std::string, std::string>> headers; // A list of the requests' headers
-        const std::array<char, 2> crlf; // Holds the CRLF sequence
-        const std::array<char, 2> nameValSep; // Contains the sequence ": "
-        std::vector<boost::asio::const_buffer> bufs; // Holds the request's buffers so that they won't be deleted before the request ends
-        std::vector<std::string> sdata; // Holds string data so that the buffers that refer to them won't contain garbage.
+        const std::string crlf; // Holds the CRLF sequence
+        const std::string nameValSep; // Contains the sequence ": "
+	boost::asio::streambuf reqBuf; // Buffer that holds our request
 };
 
 #endif // REQUEST_HPP

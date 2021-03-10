@@ -1,26 +1,91 @@
 /* C++ versions of C headers */
 #include <cstddef> // std::size_t
-#include <ctime> // std::time_t, std::time, std::tm, strftime
 
 /* Standard C++ headers */
 #include <iostream> // std::clog, std::endl
 #include <vector> // std::vector
+#include <string> // std::string
+#include <sstream> // std::ostringstream
+#include <exception> // std::exception
+
+#ifdef DEBUG
+#include <iomanip> // std::quoted
+#endif
+
+#include <string> // std::string
 
 /* Boost */
-#include <boost/asio.hpp> // All boost::asio includes
+#include <boost/asio.hpp> // All boost::asio types
 #include <boost/system/error_code.hpp> // boost::system::error_code
 
 /* Our headers */
 #include "Request.hpp" // Represents a request
+#include "Reply.hpp" // Represents a reply from the server
 
 /* Defines */
 #define DATE_SIZE 128 // Max date size length
+
+#ifdef DEBUG
+/**
+* @desc Converts buffers to a string for debugging.
+* @param bufs The buffers to dump.
+* @param bytesRead # of bytes read so far.
+* @return The contents of the buffers as a string.
+**/
+std::string bufsToStr(boost::asio::streambuf::const_buffers_type bufs, std::size_t bytesRead)
+{
+	    std::ostringstream dataSS; // We will insert all of the buffers' data into this to convert it to a single string for parsing/printing
+	    std::size_t bytesInserted = 0; // # of bytes inserted so far. Used to ensure that we don't read more data than Boost.Asio read
+	
+	    for (boost::asio::const_buffer buf : bufs) // Check each buffer that read_until stored for data
+	    {
+	        const char* curBufDat = static_cast<const char*>(buf.data()); // Fetch this buffer's data as a C string
+	        std::size_t bufSiz = buf.size(); // Length of this buffer's data
+	
+	        for (std::size_t i = 0; i < bufSiz; i++) // Avoid buffer overrun
+	        {
+	            if (bytesInserted < bytesRead) // Ensure that we don't insert more bytes than read_until actually read
+	            {
+	                dataSS << curBufDat[i]; // Insert this byte into the stringstream
+	                ++bytesInserted; // Ensure that we'll stop inserting more characters as soon as we read the correct # of bytes
+	            }
+	        }
+	    }
+
+        return dataSS.str();
+}
+
+/**
+* @desc Converts buffers to a string for debugging.
+* @param bufs The buffers to dump.
+* @return The contents of the buffers as a string.
+**/
+std::string bufsToStr(boost::asio::streambuf::const_buffers_type bufs)
+{
+	    std::ostringstream dataSS; // We will insert all of the buffers' data into this to convert it to a single string for parsing/printing
+	
+	    for (boost::asio::const_buffer buf : bufs) // Check each buffer that read_until stored for data
+	    {
+	        const char* curBufDat = static_cast<const char*>(buf.data()); // Fetch this buffer's data as a C string
+	        std::size_t bufSiz = buf.size(); // Length of this buffer's data
+	
+	        for (std::size_t i = 0; i < bufSiz; i++) // Avoid buffer overrun
+	        {
+	            dataSS << curBufDat[i]; // Insert this byte into the stringstream
+	        }
+	    }
+
+        return dataSS.str();
+}
+#endif
 
 int main()
 {
     boost::asio::io_context ioc; // For all I/O ops
     boost::asio::ip::tcp::resolver resolver(ioc); // To convert a hostname to a list of endpoints
-    auto resolveRes = resolver.resolve("cat-fact.herokuapp.com", "80"); // Get a list of HTTP endpoints
+    //std::string hostName("google.ca"); // Name of the host to connect to
+    std::string hostName("cat-fact.herokuapp.com"); // Name of the host to connect to
+    boost::asio::ip::tcp::resolver::results_type resolveRes = resolver.resolve(hostName, "http"); // Get a list of HTTP endpoints
 
     #ifdef DEBUG
     int eNo = 1;
@@ -38,7 +103,7 @@ int main()
 
     boost::asio::ip::tcp::socket sock(ioc); // THe socket over which we communicate with the server
     #ifdef DEBUG
-    auto connectedEndpoint = boost::asio::connect(sock, resolveRes); // Connect to an endpoint
+    boost::asio::ip::tcp::endpoint connectedEndpoint = boost::asio::connect(sock, resolveRes); // Connect to an endpoint
     #else
     boost::asio::connect(sock, resolveRes); // Connect to an endpoint
     #endif
@@ -54,55 +119,53 @@ int main()
 
     /* Create a Request and convert it to buffers, then send it */
     Request req; // Just default-construct it for now
-    req.addHeader("Accept", "application/json"); // Request a JSON response from the API
-    req.addHeader("Accept-Charset", "utf-8"); // Most common charset on the Internet
-    req.addHeader("Content-Length", "0"); // No body
-    std::time_t now = std::time(NULL); // Get the current time
-    std::tm* localTime = std::localtime(&now); // Convert it to calendar time
-    char timeStr[DATE_SIZE]; // Time string
+    req.addHeader("Host", hostName); // Mandatory header
+    req.addHeader("Accept", "*/*");
+    req.addHeader("User-Agent", "Cat Fact Client/1.6 (Linux x86_64)");
+    req.addHeader("Connection", "close");
+    req.createBuf(); // Tell the Request object to create its buffer for sending the request over the network
+    boost::asio::streambuf& reqBuf = req.getBuf();
 
     #ifdef DEBUG
-    std::size_t bytesWritten = std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
-    std::cout << "Date: " << timeStr << std::endl
-    << "Date size: " << bytesWritten << std::endl;
-    #else
-    std::strftime(timeStr, 64, "%a, %d %b %Y %H:%M:%S %Z", localTime);
+    boost::asio::streambuf::const_buffers_type bufs = reqBuf.data();
+    std::string reqStr = bufsToStr(bufs);
+    std::cout << "Request as a string: " << std::endl
+    << reqStr << std::endl;
     #endif
 
-    req.addHeader("Date", timeStr);
-    req.addHeader("Host", "cat-fact.herokuapp.com"); // Mandatory header
-    req.addHeader("User-Agent", "Cat Fact Client/1.0"); // For fun
-    std::vector<boost::asio::const_buffer> reqBufs = req.toBuffers(); // Convert the request to buffers
-
-    #ifdef DEBUG
-    std::clog << "Request buffers: " << std::endl;
-    int bufNo = 1;
-
-    for (boost::asio::const_buffer buf : reqBufs)
-    {
-        std::clog << bufNo << ")\t";
-        const char* bufDat = static_cast<const char*>(buf.data()); // Get the buffer's data
-        std::size_t bufSiz = buf.size(); // Get the size of the buffer's data
-
-        for (std::size_t i = 0; i < bufSiz; i++) // Print each character
-        {
-            std::clog << bufDat[i];
-        }
-
-        std::clog << std::endl; // End the line
-        ++bufNo;
-    }
-    #endif
-
-    boost::asio::write(sock, reqBufs); // Send our request to the server
+    boost::asio::write(sock, reqBuf); // Send our request to the server
 
     #ifdef DEBUG
     std::clog << "Sent request to the server!" << std::endl;
     #endif
 
     /* Read the response */
-    
-    std::size_t bytesRead = boost::asio::read_until(sock, );
+    Reply rep; // Will parse the response and store data inside itself
+    bool stillReading = true; // Lets us loop until there's no more data to read
+    #ifdef DEBUG
+    int lineNo = 1;
+    #endif
+
+    while (stillReading)
+    {
+        try
+        {
+		    std::size_t bytesRead = boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read until the end of the line
+	        #ifdef DEBUG
+		    boost::asio::streambuf::const_buffers_type datBufs = rep.buffer().data(); // Fetch the data read so far
+	        std::string bufStr = bufsToStr(datBufs, bytesRead);
+		    std::clog << "Line #" << lineNo << " of reply: " << std::quoted(bufStr) << std::endl;
+            ++lineNo;
+		    #endif
+	        rep.buffer().consume(bytesRead); // Consume the data we read so that we'll read fresh data next time
+        }
+
+        catch (std::exception& ex) // Horrible, but will do for now
+        {
+            std::cerr << "Caught some type of exception!" << ex.what() << std::endl;
+            stillReading = false;
+        }
+    }
 
     return 0;
 }
