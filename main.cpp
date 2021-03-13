@@ -16,7 +16,8 @@
 
 /* Boost */
 #include <boost/asio.hpp> // All boost::asio types
-#include <boost/system/error_code.hpp> // boost::system::error_code
+#include <boost/system/system_error.hpp> // boost::system::system_error
+#include <boost/json.hpp> // boost::json::value, boost::json::parse
 
 /* Our headers */
 #include "Request.hpp" // Represents a request
@@ -25,7 +26,6 @@
 /* Defines */
 #define DATE_SIZE 128 // Max date size length
 
-#ifdef DEBUG
 /**
 * @desc Converts buffers to a string for debugging.
 * @param bufs The buffers to dump.
@@ -77,7 +77,6 @@ std::string bufsToStr(boost::asio::streambuf::const_buffers_type bufs)
 
         return dataSS.str();
 }
-#endif
 
 int main()
 {
@@ -139,9 +138,58 @@ int main()
     std::clog << "Sent request to the server!" << std::endl;
     #endif
 
-    /* Read the response */
+    /** Read the response **/
     Reply rep; // Will parse the response and store data inside itself
-    bool stillReading = true; // Lets us loop until there's no more data to read
+
+    /* Read and parse the status line */
+    boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the status line
+    /*rep.parseStatusLine(); // Parse the status line and store the status as an integer
+
+    if (rep.getStatus() == 200) // Got a successful response
+    {
+        #ifdef DEBUG
+        std::clog << "Got a successful response!" << std::endl;
+        #endif*/
+
+        /* Read and parse each header line */
+        /*while (!rep.isFinalTerminator()) // Loop until the data in the buffer is only "\r\n" - the final terminator after the headers
+        {
+            boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the next line
+            rep.parseHeader(); // Tell the reply to parse this line as a header
+        }
+    }
+
+    else // Bad response of some sort
+    {
+        std::cout << "Bad response" << std::endl;
+    }*/
+
+    if (rep.parseStatusLine())
+    {
+        #ifdef DEBUG
+        std::cout << "Reply's status line is valid" << std::endl;
+        #endif
+
+        if (rep.getStatus() == 200) // Received a good response
+        {
+            /* Parse headers until we reach the terminator between the headers and the body */
+            while (!rep.isFinalTerminator())
+            {
+            }
+        }
+
+        else // Received a bad response
+        {
+            std::cerr << "Error: received a bad response: " << rep.getStatus() << std::endl;
+        }
+    }
+
+    else
+    {
+        std::cerr << "Bad status line" << std::endl;
+    }
+
+    /*bool stillReading = true; // Lets us loop until there's no more data to read
     #ifdef DEBUG
     int lineNo = 1;
     #endif
@@ -160,11 +208,40 @@ int main()
 	        rep.buffer().consume(bytesRead); // Consume the data we read so that we'll read fresh data next time
         }
 
-        catch (std::exception& ex) // Horrible, but will do for now
+        catch (boost::system::system_error& ex) // No more data left
         {
-            std::cerr << "Caught some type of exception!" << ex.what() << std::endl;
+            std::cerr << "I've now read the server's entire response!" << std::endl
+            <<  ex.what() << std::endl;
             stillReading = false;
         }
+    }*/
+
+    boost::asio::streambuf& repBuf = rep.buffer();
+    boost::asio::streambuf::const_buffers_type datBufs = repBuf.data();
+    std::string bufStr = bufsToStr(datBufs);
+
+    #ifdef DEBUG
+    std::cout << "Data remaining in buffer: " << bufStr << std::endl;
+    #endif
+
+    /* Parse and display the response */
+    boost::json::value catFact; // Will hold the JSON as a C++ object, so that we can access it
+
+    try
+    {
+        catFact = boost::json::parse(bufStr);
+        #ifdef DEBUG
+        std::clog << "Parsed JSON: " << std::endl
+        << catFact << std::endl;
+        #endif
+        std::cout << catFact.at("text").as_string() << std::endl; // Print the fact
+    }
+
+    catch (boost::system::system_error& parseErr)
+    {
+        std::cerr << "Error occurred while attempting to parse JSON response." << std::endl
+        << parseErr.what()
+        << std::endl;
     }
 
     return 0;

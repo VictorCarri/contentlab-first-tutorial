@@ -33,3 +33,7 @@
 
 # Swap files
 .*.swp
+
+# Temporary files
+*.ii
+*.s
