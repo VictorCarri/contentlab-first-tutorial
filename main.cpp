@@ -16,7 +16,7 @@
 
 /* Boost */
 #include <boost/asio.hpp> // All boost::asio types
-#include <boost/system/system_error.hpp> // boost::system::system_error
+#include <boost/system/error_code.hpp> // boost::system::error_code
 #include <boost/json.hpp> // boost::json::value, boost::json::parse
 
 /* Our headers */
@@ -143,26 +143,6 @@ int main()
 
     /* Read and parse the status line */
     boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the status line
-    /*rep.parseStatusLine(); // Parse the status line and store the status as an integer
-
-    if (rep.getStatus() == 200) // Got a successful response
-    {
-        #ifdef DEBUG
-        std::clog << "Got a successful response!" << std::endl;
-        #endif*/
-
-        /* Read and parse each header line */
-        /*while (!rep.isFinalTerminator()) // Loop until the data in the buffer is only "\r\n" - the final terminator after the headers
-        {
-            boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the next line
-            rep.parseHeader(); // Tell the reply to parse this line as a header
-        }
-    }
-
-    else // Bad response of some sort
-    {
-        std::cout << "Bad response" << std::endl;
-    }*/
 
     if (rep.parseStatusLine())
     {
@@ -175,6 +155,59 @@ int main()
             /* Parse headers until we reach the terminator between the headers and the body */
             while (!rep.isFinalTerminator())
             {
+                boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the next line
+                rep.parseHeader(); // Tell the reply to parse this line as a header and store its contents
+                #ifdef DEBUG
+                std::cout << std::endl; // Make debugging output look nicer
+                #endif
+            }
+
+            /* Read until the final '}' in the response, then ensure that we read as many characters as we expected */
+            std::size_t jsonLength = rep.getLength(); // # of characters to read
+            std::size_t numCharsRead = 0;
+		    std::string initBufConts = bufsToStr(rep.buffer().data()); // First part of the JSON response
+            boost::system::error_code ec; // Holds an error code. Used to check if we've read all the data
+            numCharsRead += initBufConts.length(); // Count the # of characters read
+		
+		    #ifdef DEBUG
+		    std::cout << "Data remaining in buffer: " << std::quoted(initBufConts) << std::endl;
+		    #endif
+
+            while (numCharsRead < jsonLength)
+            {
+                std::size_t charsReadOnCurCall = boost::asio::read(sock, rep.buffer(), ec); // Read data and increment the # of characters read
+                #ifdef DEBUG
+                std::clog << "main: read " << charsReadOnCurCall << " chars on current call" << std::endl;
+                #endif
+                numCharsRead += charsReadOnCurCall;
+                #ifdef DEBUG
+                std::cout << "main: read " << numCharsRead << "/" << jsonLength << " chars of response body" << std::endl;
+                #endif
+            }
+        
+            std::string fullJSON = bufsToStr(rep.buffer().data()); // Second part of the JSON response
+
+            #ifdef DEBUG
+            std::cout << "Second part of response: " << fullJSON << std::endl;
+            #endif
+
+            boost::json::value catFact;
+
+            try
+            {
+                catFact = boost::json::parse(fullJSON);
+                #ifdef DEBUG
+                std::clog << "Parsed JSON: " << std::endl
+                << catFact << std::endl;
+                #endif
+                std::cout << catFact.at("text").as_string() << std::endl; // Print the fact
+            }
+        
+            catch (boost::system::system_error& parseErr)
+            {
+                std::cerr << "Error occurred while attempting to parse JSON response." << std::endl
+                << parseErr.what()
+                << std::endl;
             }
         }
 
@@ -187,61 +220,6 @@ int main()
     else
     {
         std::cerr << "Bad status line" << std::endl;
-    }
-
-    /*bool stillReading = true; // Lets us loop until there's no more data to read
-    #ifdef DEBUG
-    int lineNo = 1;
-    #endif
-
-    while (stillReading)
-    {
-        try
-        {
-		    std::size_t bytesRead = boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read until the end of the line
-	        #ifdef DEBUG
-		    boost::asio::streambuf::const_buffers_type datBufs = rep.buffer().data(); // Fetch the data read so far
-	        std::string bufStr = bufsToStr(datBufs, bytesRead);
-		    std::clog << "Line #" << lineNo << " of reply: " << std::quoted(bufStr) << std::endl;
-            ++lineNo;
-		    #endif
-	        rep.buffer().consume(bytesRead); // Consume the data we read so that we'll read fresh data next time
-        }
-
-        catch (boost::system::system_error& ex) // No more data left
-        {
-            std::cerr << "I've now read the server's entire response!" << std::endl
-            <<  ex.what() << std::endl;
-            stillReading = false;
-        }
-    }*/
-
-    boost::asio::streambuf& repBuf = rep.buffer();
-    boost::asio::streambuf::const_buffers_type datBufs = repBuf.data();
-    std::string bufStr = bufsToStr(datBufs);
-
-    #ifdef DEBUG
-    std::cout << "Data remaining in buffer: " << bufStr << std::endl;
-    #endif
-
-    /* Parse and display the response */
-    boost::json::value catFact; // Will hold the JSON as a C++ object, so that we can access it
-
-    try
-    {
-        catFact = boost::json::parse(bufStr);
-        #ifdef DEBUG
-        std::clog << "Parsed JSON: " << std::endl
-        << catFact << std::endl;
-        #endif
-        std::cout << catFact.at("text").as_string() << std::endl; // Print the fact
-    }
-
-    catch (boost::system::system_error& parseErr)
-    {
-        std::cerr << "Error occurred while attempting to parse JSON response." << std::endl
-        << parseErr.what()
-        << std::endl;
     }
 
     return 0;

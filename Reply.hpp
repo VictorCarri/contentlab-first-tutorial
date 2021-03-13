@@ -1,12 +1,18 @@
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
+/* C++ versions of C headers */
+#include <cstddef> // std::size_t
+
 /* Standard C++ */
 #include <vector> // std::vector
+#include <utility> // std::pair
+#include <string> // std::string
 
 /* Boost */
 #include <boost/asio.hpp> // boost::asio::streambuf
 #include <boost/regex.hpp> // boost::regex
+#include <boost/any.hpp> // boost::any
 
 class Reply
 {
@@ -45,11 +51,19 @@ class Reply
         **/
         Reply();
 
+	/**
+	* @desc Fetches the response's length.
+	* @return The response's length.
+	**/
+	std::size_t getLength() const;
+
     private:
         boost::asio::streambuf repBuf; // Holds the latest data read from the socket
         short status; // The reply's status
         boost::regex headerReg; // Used to parse headers
         boost::regex statReg; // Used to parse the status line
+	std::vector<std::pair<std::string, boost::any>> headers; // The response's headers
+	std::size_t length; // Content length
 };
 
 #endif // RESPONSE_HPP

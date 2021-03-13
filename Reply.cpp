@@ -6,9 +6,11 @@
 #include <iomanip> // std::quoted
 #endif
 #include <sstream> // std::stringstream
+#include <utility> // std::make_pair
 
 /* Boost */
-#include <boost/regex.hpp>
+#include <boost/regex.hpp> // boost::regex_match, boost::smatch
+#include <boost/any.hpp> // boost::any
 
 /* Our headers */
 #include "Reply.hpp" // Class def'n
@@ -134,9 +136,36 @@ bool Reply::parseHeader()
 
 	if (boost::regex_match(headerLine, what, headerReg)) // Valid header line
 	{
+		std::string headerName = what[1].str();
+
 		#ifdef DEBUG
-		std::cout << "Reply::parseHeader: header line is valid." << std::endl;
+		std::cout << "Reply::parseHeader: header line is valid." << std::endl
+		<< "Header name: \"" << headerName << "\"" << std::endl;
 		#endif
+
+		if (headerName == "Content-Length") // We need to parse the value as an integer
+		{
+			std::string lengthStr = what[2].str();
+
+			#ifdef DEBUG
+			std::cout << "Length of JSON as a string: " << std::quoted(lengthStr) << std::endl;
+			#endif
+
+			std::istringstream lengthStrm(lengthStr); // To convert it to an integer
+			lengthStrm >> length; // Read the length
+
+			#ifdef DEBUG
+			std::cout << "Length of JSON as an integer: " << length << std::endl;
+			#endif
+
+			headers.emplace_back(headerName, length);
+		}
+
+		else // We can just store the value as a string
+		{
+			headers.emplace_back(headerName, what[2].str());
+		}
+
 		toReturn = true;
 	}
 
@@ -156,4 +185,13 @@ bool Reply::parseHeader()
 Reply::Reply() : headerReg("(.*): (.*)"), // Parse the name and contents of a header separately
 	statReg("^HTTP/[0-9]\\.[0-9] ([0-9]{3}) (.*)$") // Match a status line according to the RFC - HTTP/{versionMajor}.{versionMinor} (responseCode) responseText
 {
+}
+
+/**
+* @desc Fetches the response's length.
+* @return The response's length.
+**/
+std::size_t Reply::getLength() const
+{
+	return length;
 }
