@@ -2,6 +2,7 @@
 #include <utility> // std::pair
 #include <vector> // std::vector
 #include <string> // std::string
+#include <ostream> // std::ostream
 
 /* Boost */
 #include <boost/asio.hpp> // boost::asio::const_buffer
@@ -12,8 +13,8 @@
 /**
 * @desc Constructor. Initializes const fields.
 **/
-Request::Request() : crlf {'\r', '\n'}, // Initialize the line-ender buffer
-    nameValSep {':', ' '} // Initialize the separator for header names and values
+Request::Request() : crlf("\r\n"), // Initialize the line-ender string
+    nameValSep(": ") // Initialize the separator for header names and values
 {
 }
 
@@ -28,32 +29,26 @@ void Request::addHeader(std::string name, std::string val)
 }
 
 /**
-* @desc Converts the Request object to a vector of buffers that can be sent over the network.
-* @return A vector of buffers that can be passed to Boost.Asio's write function.
+* @desc Returns the request's internal buffer for Boost.Asio's write() function.
 **/
-std::vector<boost::asio::const_buffer> Request::toBuffers()
+boost::asio::streambuf& Request::getBuf()
 {
-    /* Clear the old data, just in case */
-    bufs.clear();
-    sdata.clear();
+	return reqBuf;
+}
 
-    /* Write the request line (method, resource, and HTTP version identifier) */
-    sdata.push_back("GET /facts/random  HTTP/1.1"); // Tells the API to return a random fact
-    bufs.push_back(boost::asio::buffer(sdata.back())); // Push back a buffer with the request line
-    bufs.push_back(boost::asio::buffer(crlf)); // End the request line
+/**
+* @desc Tells the Request object to convert itself to a streambuf for writing.
+**/
+void Request::createBuf()
+{
+	reqBuf.consume(reqBuf.capacity()); // Clear the buffer in case it contained anything
+	std::ostream reqStream(&reqBuf); // The stream we will use to write the request
+	reqStream << "GET /facts/random HTTP/1.0" << crlf; // Write the request line
 
-    /* Write the request's headers */
-    for (std::pair<std::string, std::string> header : headers) // Loop through the headers in order
-    {
-        /* Write the header name and value, separated by a single colon and a space */
-        sdata.push_back(header.first); // Store the name
-        bufs.push_back(boost::asio::buffer(sdata.back())); // Add a buffer for the header's name
-        bufs.push_back(boost::asio::buffer(nameValSep)); // Add a buffer for the separator
-        sdata.push_back(header.second); // Store the header's value
-        bufs.push_back(boost::asio::buffer(sdata.back())); // Add a buffer for the header's value
-        bufs.push_back(boost::asio::buffer(crlf)); // Add the line terminator
-    }
+	for (std::pair<std::string, std::string> header : headers) // Write each header
+	{
+		reqStream << header.first << nameValSep << header.second << crlf; // Write the header's name, a separator, the value, and a CRLF terminator
+	}
 
-    bufs.push_back(boost::asio::buffer(crlf)); // Add a buffer for the request terminator
-    return bufs; // Return a copy of our buffers. We store them ourselves to ensure that they don't disappear before the caller sends them over the network using Boost.Asio
+	reqStream << crlf; // End the request
 }
