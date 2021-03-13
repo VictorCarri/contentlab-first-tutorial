@@ -29,47 +29,47 @@ boost::asio::streambuf& Reply::buffer()
 **/
 bool Reply::parseStatusLine()
 {
-	/* Parse using only the standard lib */
-	std::istream bufStrm(&repBuf); // Construct an istream that will read data from the buffer
-	std::string statusLine;
+    /* Parse using only the standard lib */
+    std::istream bufStrm(&repBuf); // Construct an istream that will read data from the buffer
+    std::string statusLine;
 
-	std::getline(bufStrm, statusLine, '\r'); // Read until the CR
-	bufStrm.get(); // Read the NL so that the first header will be read properly
-	/*#ifdef DEBUG
-	std::clog << "Reply::parseStatusLine: status line = " << std::quoted(statusLine) << std::endl;
-	#endif
-	std::string statStr = statusLine.substr(9, 3); // Extract the status code
-	std::istringstream statStrm(statStr); // To read the status as a short
-	statStrm >> status; // Store the status
-	#ifdef DEBUG
-	std::clog << "Reply::parseStatusLine: status code = " << status << std::endl;
-	#endif*/
-	
-	/* Parse using Boost */
-	boost::smatch what; // What matched
-	
-	if (boost::regex_match(statusLine, what, statReg)) // This is a valid status line
-	{
-		#ifdef DEBUG
-		for (unsigned long long i = 0; i < what.size(); i++) // Print each match
-		{
-			std::clog << "Match #" << (i+1) << ": \"" << what[i] << "\"" << std::endl;
-		}
-		#endif
+    std::getline(bufStrm, statusLine, '\r'); // Read until the CR
+    bufStrm.get(); // Read the NL so that the first header will be read properly
+    /*#ifdef DEBUG
+    std::clog << "Reply::parseStatusLine: status line = " << std::quoted(statusLine) << std::endl;
+    #endif
+    std::string statStr = statusLine.substr(9, 3); // Extract the status code
+    std::istringstream statStrm(statStr); // To read the status as a short
+    statStrm >> status; // Store the status
+    #ifdef DEBUG
+    std::clog << "Reply::parseStatusLine: status code = " << status << std::endl;
+    #endif*/
+    
+    /* Parse using Boost */
+    boost::smatch what; // What matched
+    
+    if (boost::regex_match(statusLine, what, statReg)) // This is a valid status line
+    {
+        #ifdef DEBUG
+        for (unsigned long long i = 0; i < what.size(); i++) // Print each match
+        {
+            std::clog << "Match #" << (i+1) << ": \"" << what[i] << "\"" << std::endl;
+        }
+        #endif
 
-		std::string code = what[1].str(); // The status code
-		std::istringstream statStrm(code); // Construct a stream to read it as a short
-		statStrm >> status; // Read the status
-		#ifdef DEBUG
-		std::cout << "Reply::parseStatusLine: status code = " << status << std::endl;
-		#endif
-		return (status == 200);
-	}
+        std::string code = what[1].str(); // The status code
+        std::istringstream statStrm(code); // Construct a stream to read it as a short
+        statStrm >> status; // Read the status
+        #ifdef DEBUG
+        std::cout << "Reply::parseStatusLine: status code = " << status << std::endl;
+        #endif
+        return (status == 200);
+    }
 
-	else
-	{
-		return false;
-	}
+    else
+    {
+        return false;
+    }
 }
 
 /**
@@ -78,7 +78,7 @@ bool Reply::parseStatusLine()
 **/
 short Reply::getStatus() const
 {
-	return status;
+    return status;
 }
 
 /**
@@ -87,33 +87,33 @@ short Reply::getStatus() const
 **/
 bool Reply::isFinalTerminator()
 {
-	std::istream bufStrm(&repBuf);
-	bool toReturn = false;
-	
-	#ifdef DEBUG
-	std::cout << "Reply::isFinalTerminator: bufStrm.peek() == '" << bufStrm.peek() << "'%" << std::endl;
-	#endif
-	
-	if (bufStrm.peek() == '\r') // Current character is "\r", check if the next is "\n"
-	{
-		bufStrm.get(); // Read the "\r"
+    std::istream bufStrm(&repBuf);
+    bool toReturn = false;
+    
+    #ifdef DEBUG
+    std::cout << "Reply::isFinalTerminator: bufStrm.peek() == '" << bufStrm.peek() << "'%" << std::endl;
+    #endif
+    
+    if (bufStrm.peek() == '\r') // Current character is "\r", check if the next is "\n"
+    {
+        bufStrm.get(); // Read the "\r"
 
-		#ifdef DEBUG
-		std::cout << "Reply::isFinalTerminator: inside outer if: bufStrm.peek() == '" << bufStrm.peek() << "'%" << std::endl;
-		#endif
-	
-		if (bufStrm.peek() == '\n') // Next character is the line-term, so this is the final terminator
-		{
-			toReturn = true;
-		}
+        #ifdef DEBUG
+        std::cout << "Reply::isFinalTerminator: inside outer if: bufStrm.peek() == '" << bufStrm.peek() << "'%" << std::endl;
+        #endif
+    
+        if (bufStrm.peek() == '\n') // Next character is the line-term, so this is the final terminator
+        {
+            toReturn = true;
+        }
 
-		else // Not the final terminator
-		{
-			bufStrm.unget(); // Undo the extraction, so that the buffer's contents will still be valid
-		}
-	}
+        else // Not the final terminator
+        {
+            bufStrm.unget(); // Undo the extraction, so that the buffer's contents will still be valid
+        }
+    }
 
-	return toReturn; // Will be false unless we read "\r\n"
+    return toReturn; // Will be false unless we read "\r\n"
 }
 
 /**
@@ -122,68 +122,68 @@ bool Reply::isFinalTerminator()
 **/
 bool Reply::parseHeader()
 {
-	std::istream bufStrm(&repBuf); // Construct an istream that will read data from the buffer
-	std::string headerLine; // Will hold the entire header line
-	bool toReturn = false;
+    std::istream bufStrm(&repBuf); // Construct an istream that will read data from the buffer
+    std::string headerLine; // Will hold the entire header line
+    bool toReturn = false;
 
-	std::getline(bufStrm, headerLine, '\r'); // Read until the CR
-	bufStrm.get(); // Clear the "\n" 
-	#ifdef DEBUG
-	std::clog << "Reply::parseHeader: header line = " << std::quoted(headerLine) << std::endl;
-	#endif
+    std::getline(bufStrm, headerLine, '\r'); // Read until the CR
+    bufStrm.get(); // Clear the "\n" 
+    #ifdef DEBUG
+    std::clog << "Reply::parseHeader: header line = " << std::quoted(headerLine) << std::endl;
+    #endif
 
-	boost::smatch what; // What matched	
+    boost::smatch what; // What matched    
 
-	if (boost::regex_match(headerLine, what, headerReg)) // Valid header line
-	{
-		std::string headerName = what[1].str();
+    if (boost::regex_match(headerLine, what, headerReg)) // Valid header line
+    {
+        std::string headerName = what[1].str();
 
-		#ifdef DEBUG
-		std::cout << "Reply::parseHeader: header line is valid." << std::endl
-		<< "Header name: \"" << headerName << "\"" << std::endl;
-		#endif
+        #ifdef DEBUG
+        std::cout << "Reply::parseHeader: header line is valid." << std::endl
+        << "Header name: \"" << headerName << "\"" << std::endl;
+        #endif
 
-		if (headerName == "Content-Length") // We need to parse the value as an integer
-		{
-			std::string lengthStr = what[2].str();
+        if (headerName == "Content-Length") // We need to parse the value as an integer
+        {
+            std::string lengthStr = what[2].str();
 
-			#ifdef DEBUG
-			std::cout << "Length of JSON as a string: " << std::quoted(lengthStr) << std::endl;
-			#endif
+            #ifdef DEBUG
+            std::cout << "Length of JSON as a string: " << std::quoted(lengthStr) << std::endl;
+            #endif
 
-			std::istringstream lengthStrm(lengthStr); // To convert it to an integer
-			lengthStrm >> length; // Read the length
+            std::istringstream lengthStrm(lengthStr); // To convert it to an integer
+            lengthStrm >> length; // Read the length
 
-			#ifdef DEBUG
-			std::cout << "Length of JSON as an integer: " << length << std::endl;
-			#endif
+            #ifdef DEBUG
+            std::cout << "Length of JSON as an integer: " << length << std::endl;
+            #endif
 
-			headers.emplace_back(headerName, length);
-		}
+            headers.emplace_back(headerName, length);
+        }
 
-		else // We can just store the value as a string
-		{
-			headers.emplace_back(headerName, what[2].str());
-		}
+        else // We can just store the value as a string
+        {
+            headers.emplace_back(headerName, what[2].str());
+        }
 
-		toReturn = true;
-	}
+        toReturn = true;
+    }
 
-	else // Invalid header line
-	{
-		#ifdef DEBUG
-		std::cout << "Reply::parseHeader: header line is invalid." << std::endl;
-		#endif
-	}
+    else // Invalid header line
+    {
+        #ifdef DEBUG
+        std::cout << "Reply::parseHeader: header line is invalid." << std::endl;
+        #endif
+    }
 
-	return toReturn;
+    return toReturn;
 }
 
 /**
 * @desc Constructor. Initializes regexes.
 **/
 Reply::Reply() : headerReg("(.*): (.*)"), // Parse the name and contents of a header separately
-	statReg("^HTTP/[0-9]\\.[0-9] ([0-9]{3}) (.*)$") // Match a status line according to the RFC - HTTP/{versionMajor}.{versionMinor} (responseCode) responseText
+    statReg("^HTTP/[0-9]\\.[0-9] ([0-9]{3}) (.*)$") // Match a status line according to the RFC - HTTP/{versionMajor}.{versionMinor} (responseCode) responseText
 {
 }
 
@@ -193,5 +193,5 @@ Reply::Reply() : headerReg("(.*): (.*)"), // Parse the name and contents of a he
 **/
 std::size_t Reply::getLength() const
 {
-	return length;
+    return length;
 }

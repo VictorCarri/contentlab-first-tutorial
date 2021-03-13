@@ -6,7 +6,7 @@ dbgObjs=$(addsuffix .debug.o,main Request Reply)
 prodObjs=$(addsuffix .o,main Request Reply)
 commonOpts=$(addprefix -W,all error) -std=gnu++17 -save-temps
 libDirs=-L/usr/local/lib/boost
-boostLibs=json regex
+boostLibs=json regex program_options
 libs=$(addprefix -l,pthread $(addprefix boost_,$(addsuffix -gcc10-mt-x64-1_75,$(boostLibs))))
 dbgLibs=$(addprefix -l,pthread $(addprefix boost_,$(addsuffix -gcc10-mt-d-x64-1_75,$(boostLibs))))
 
