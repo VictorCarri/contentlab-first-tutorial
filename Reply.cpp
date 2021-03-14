@@ -52,7 +52,7 @@ bool Reply::parseStatusLine()
 		#ifdef DEBUG
 		std::cout << "Reply::parseStatusLine: status code = " << status << std::endl;
 		#endif
-		return (status == 200);
+		return true; // Successfully parsed the response
 	}
 
 	else
