@@ -9,6 +9,7 @@
 #include <utility> // std::make_pair
 
 /* Boost */
+#include <boost/asio.hpp> // boost::asio::streambuf
 #include <boost/regex.hpp> // boost::regex_match, boost::smatch
 #include <boost/any.hpp> // boost::any
 
