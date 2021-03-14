@@ -29,24 +29,12 @@ boost::asio::streambuf& Reply::buffer()
 **/
 bool Reply::parseStatusLine()
 {
-	/* Parse using only the standard lib */
 	std::istream bufStrm(&repBuf); // Construct an istream that will read data from the buffer
 	std::string statusLine;
+	boost::smatch what; // What matched
 
 	std::getline(bufStrm, statusLine, '\r'); // Read until the CR
 	bufStrm.get(); // Read the NL so that the first header will be read properly
-	/*#ifdef DEBUG
-	std::clog << "Reply::parseStatusLine: status line = " << std::quoted(statusLine) << std::endl;
-	#endif
-	std::string statStr = statusLine.substr(9, 3); // Extract the status code
-	std::istringstream statStrm(statStr); // To read the status as a short
-	statStrm >> status; // Store the status
-	#ifdef DEBUG
-	std::clog << "Reply::parseStatusLine: status code = " << status << std::endl;
-	#endif*/
-	
-	/* Parse using Boost */
-	boost::smatch what; // What matched
 	
 	if (boost::regex_match(statusLine, what, statReg)) // This is a valid status line
 	{
