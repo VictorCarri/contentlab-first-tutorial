@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
     req.setAmount(amount);
 
     req.addHeader("Host", hostName); // Mandatory header
-    req.addHeader("Accept", "*/*");
+    req.addHeader("Accept", "application/json");
     req.addHeader("User-Agent", "Cat Fact Client/3.0 (Linux x86_64)");
     req.addHeader("Connection", "close");
     req.createBuf(); // Tell the Request object to create its buffer for sending the request over the network
