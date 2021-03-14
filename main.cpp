@@ -152,6 +152,10 @@ int main()
 
         if (rep.getStatus() == 200) // Received a good response
         {
+            #ifdef DEBUG
+            std::cout << "Received a good response" << std::endl;
+            #endif
+
             /* Parse headers until we reach the terminator between the headers and the body */
             while (!rep.isFinalTerminator())
             {
