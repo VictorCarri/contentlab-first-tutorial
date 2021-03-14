@@ -170,7 +170,7 @@ bool Reply::parseHeader()
 /**
 * @desc Constructor. Initializes regexes.
 **/
-Reply::Reply() : headerReg("(.*): (.*)"), // Parse the name and contents of a header separately
+Reply::Reply() : headerReg("^(.*): (.*)$"), // Parse the name and contents of a header separately
 	statReg("^HTTP/[0-9]\\.[0-9] ([0-9]{3}) (.*)$") // Match a status line according to the RFC - HTTP/{versionMajor}.{versionMinor} (responseCode) responseText
 {
 }
