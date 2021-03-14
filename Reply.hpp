@@ -42,7 +42,7 @@ class Reply
 
         /**
         * @desc Parses the contents of the buffer as a header and stores the header value.
-	* @return True if the contents of the buffer were a valid header, false otherwise.
+	    * @return True if the contents of the buffer were a valid header, false otherwise.
         **/
         bool parseHeader();
 

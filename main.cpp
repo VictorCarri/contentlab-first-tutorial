@@ -156,14 +156,22 @@ int main()
             std::cout << "Received a good response" << std::endl;
             #endif
 
+            bool parseSucceeded = true;
+
             /* Parse headers until we reach the terminator between the headers and the body */
-            while (!rep.isFinalTerminator())
+            while (!rep.isFinalTerminator() && parseSucceeded)
             {
                 boost::asio::read_until(sock, rep.buffer(), "\r\n"); // Read the next line
-                rep.parseHeader(); // Tell the reply to parse this line as a header and store its contents
+                parseSucceeded = rep.parseHeader(); // Tell the reply to parse this line as a header and store its contents
                 #ifdef DEBUG
                 std::cout << std::endl; // Make debugging output look nicer
                 #endif
+            }
+
+            if (!parseSucceeded) // Loop exited due to invalid header
+            {
+                std::cerr << "Failed to parse a header." << std::endl;
+                return -1;
             }
 
             /* Read until the final '}' in the response, then ensure that we read as many characters as we expected */
