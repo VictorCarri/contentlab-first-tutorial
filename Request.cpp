@@ -75,7 +75,7 @@ void Request::createBuf()
         reqStream << "animal_type=" << uriEncode(animalType);
     }
 
-    reqStream << " HTTP/1.0" << crlf; // End the request line, regardless of whether or not we will send parameters
+    reqStream << " HTTP/1.1" << crlf; // End the request line, regardless of whether or not we will send parameters
 
     for (std::pair<std::string, std::string> header : headers) // Write each header
     {
